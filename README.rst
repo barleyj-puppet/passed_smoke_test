@@ -28,11 +28,11 @@ Insallation
 
 Features
 --------
-* Check if the latest repo commit was tested in the lastest smoke test
+* Check if the latest repo commit was tested in the lastest smoke test.::
       
       passed_smoke_test latest_build --repo puppetlabs-pe_repo --branch davis
       
-* Check what commits are in the latest enterprise-dist
+* Check what commits are in the latest enterprise-dist.::
 
       passed_smoke_test commits --repo puppetlabs-pe_repo --branch glisan    
       commit 98130963dcf3be0d45c0f9765aad0e93b1c0f0e0
