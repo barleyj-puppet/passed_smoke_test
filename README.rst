@@ -17,11 +17,10 @@ Insallation
 * Clone the repo:
 
   git clone git@github.com:barleyj-puppet/passed_smoke_test.git
-* Set your jenkins username and api token up. The token can be found by clicking your name and selecting configure then clicking the "Show API Token" button
+* Set your jenkins username and api token up. The token can be found by clicking your name and selecting configure then clicking the "Show API Token" button.::
   
-  export JENKINS_USERNAME='your.username'
-
-  export JENKINS_TOKEN='your api token'
+      export JENKINS_USERNAME='your.username'
+      export JENKINS_TOKEN='your api token'
 * Install passed_smoke_test. From within the passed_smoke_test directory run:
 
   python setup.py install
@@ -29,6 +28,7 @@ Insallation
 
 Features
 --------
+
 
 * TODO
 
