@@ -37,7 +37,7 @@ setup(
     author_email='jayson.barley@puppet.com',
     url='https://github.com/barleyj-puppet/passed_smoke_test',
     py_modules=['passed_smoke_test'],
-    packages=find_packages(include=['passed_smoke_test']),
+    packages=find_packages(include=['passed_smoke_test', 'passed_smoke_test.*']),
     entry_points={
         'console_scripts': [
             'passed_smoke_test=passed_smoke_test.passed_smoke_test:cli'
