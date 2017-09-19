@@ -7,8 +7,8 @@ import click
 import git
 import jenkins
 
-from lib.repo import Repo, EnterpriseDist, PeModulesVanagon
-from lib.releases import releases
+from repo import Repo, EnterpriseDist, PeModulesVanagon
+from releases import releases
 
 
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +64,6 @@ def commits(repo, branch):
 @click.option("--branch")
 def latest_build(repo, branch):
     git_sha = get_latest_build(branch)
-    git_sha = '3678754'
 
     enterprise_dist = EnterpriseDist()
     vanagon_git_ref = enterprise_dist.get_vanagon_commit_sha(git_sha)
