@@ -17,10 +17,24 @@ Insallation
 * Clone the repo.::
     
       git clone git@github.com:barleyj-puppet/passed_smoke_test.git
-* Set your jenkins username and api token up. The token can be found by clicking your name and selecting configure then clicking the "Show API Token" button.::
+     
+* Set your Jenkins username and api token up. The token can be found by clicking your name and selecting configure then clicking the "Show API Token" button.::
     
       export JENKINS_USERNAME='your.username'
       export JENKINS_TOKEN='your api token'
+      
+* Set your Jira username and api token up.::
+    
+      export JIRA_USERNAME='your.username'
+      export JIRA_TOKEN='your api token'
+
+* Set your Github username and api token up.::
+    
+      export GITHUB_USERNAME='your.username'
+      export GITHUB_TOKEN='your api token'
+
+* Jira, Jenkins, and Github tokens will be securely prompted for if they are not set in an environment variable or passed in as an option.
+
 * Install passed_smoke_test. From within the passed_smoke_test directory run.::
 
       python setup.py install
@@ -59,6 +73,17 @@ Features
 	
         Mergeup/2016.4.x to glisan/2017 09 01 22 43
 
+* Check what the last commit of a repo was if it passed one of the current smoke tests::
+  
+      passed_smoke_test last_build --repo puppetlabs-pe_manager --branch hoyt      
+      Commit 31815ef244ea7fdf9a49689c28d5f611fb45977c in repo puppetlabs-pe_manager passed smoke test in build 2017.3.2-rc1-58-ge8209b5
+
+
+* Check if all branch commits for a ticket have passed smoke test and been promoted::
+
+      passed_smoke_test ticket --branch hoyt --ticket PE-22678 --jira-username jayson.barley
+      Ticket PE-22678 passed smoke test in build 2017.3.2-rc1-37-gf90291d
+      Ticket PE-22678 was promoted in build 2017.3.2-rc1-37-gf90291d
 
 Credits
 ---------
