@@ -41,11 +41,11 @@ def cli(debug):
 @click.option("--github-token", prompt=True, hide_input=True, envvar='GITHUB_TOKEN', required=True, help='Can be provided by setting the GITHUB_TOKEN environment variable. Will prompt if this option is not provided.')
 def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_token, github_username, github_token):
     "Tells you if a ticket has passed smoke test and has been promoted into a build"
-    
+
     default_branch = releases['default'][branch]
     issue = Ticket(ticket, branch, jira_username, jira_token, github_username, github_token)
     log.debug('Ticket ID: {}'.format(issue.id))
-    
+
     if issue.is_merged:
         server = Jenkins(jenkins_username, jenkins_token)
 
@@ -93,7 +93,7 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
 @click.option("--jenkins-token", prompt=True, hide_input=True, envvar='JENKINS_TOKEN', required=True, help='Can be provided by setting the JENKINS_TOKEN environment variable. Will prompt if this option is not provided.')
 def last_build(repo, branch, jenkins_username, jenkins_token):
     "Outputs the last commit of a repo if one of the current smoke tests ran on that commit"
-    
+
     default_branch = releases['default'][branch]
     server = Jenkins(jenkins_username, jenkins_token)
     enterprise_dist = EnterpriseDist(branch)
@@ -158,7 +158,7 @@ def commits(repo, branch):
 @click.option("--branch")
 @click.option("--jenkins-username", envvar='JENKINS_USERNAME', required=True, help='Can be provided by setting the JENKINS_USERNAME environment variable.')
 @click.option("--jenkins-token", prompt=True, hide_input=True, envvar='JENKINS_TOKEN', required=True, help='Can be provided by setting the JENKINS_TOKEN environment variable. Will prompt if this option is not provided.')
-def latest_build(repo, branch, jenkins_username, jenkins_password):
+def latest_build(repo, branch, jenkins_username, jenkins_token):
     "Outputs the commit message for the last commit in the repo's branch"
 
     default_branch = releases['default'][branch]
