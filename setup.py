@@ -15,7 +15,10 @@ requirements = [
     'Click==6.7',
     'GitPython==2.1.5',
     'python-jenkins==0.4.15',
-    # TODO: put package requirements here
+    'Logbook==1.1.0',
+    'jira==1.0.10',
+    'PyGithub==1.35',
+
 ]
 
 setup_requirements = [
