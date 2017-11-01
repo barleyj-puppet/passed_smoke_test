@@ -37,13 +37,12 @@ class Repo:
 
         remote = repo.remotes[remote_name]
 
-        log.debug('Pulling branch {} in repo {}.'.format(branch, project))
-        remote.pull(branch, rebase=True)
-        
         if named_branch:
-            repo.git.checkout(branch)
+            remote.fetch(branch)
             repo.create_head(branch, remote.refs[branch]).set_tracking_branch(remote.refs[branch]).checkout()
-
+            log.debug('Pulling branch {} in repo {}.'.format(branch, project))
+            remote.pull(branch, rebase=True)
+        
         self.repo = repo
 
 
