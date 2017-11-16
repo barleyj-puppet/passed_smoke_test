@@ -1,4 +1,5 @@
 import git
+from gitdb.exc import BadName
 
 from passed_smoke_test.log import Logger, logger_group
 from passed_smoke_test.releases import releases
@@ -21,7 +22,7 @@ def _to_map(commit):
 class Repo:
     organization = 'git@github.com:puppetlabs'
 
-    def __init__(self, project, named_branch=None):
+    def __init__(self, project, named_branch):
         """Initializes, clones and checks out a branch if specified"""
 
         # This is because we've changed some modules to use a name instead of a version
@@ -39,7 +40,14 @@ class Repo:
 
         if named_branch:
             remote.fetch(branch)
-            repo.create_head(branch, remote.refs[branch]).set_tracking_branch(remote.refs[branch]).checkout()
+
+            log.debug('Active branch: {}'.format(repo.active_branch.name))
+            if repo.active_branch.name != branch:
+                if branch in repo.heads:
+                    repo.delete_head(branch)
+
+                repo.create_head(branch, remote.refs[branch]).set_tracking_branch(remote.refs[branch]).checkout()
+
             log.debug('Pulling branch {} in repo {}.'.format(branch, project))
             remote.pull(branch, rebase=True)
         
@@ -55,10 +63,13 @@ class Repo:
     def commit(self, sha):
         log.debug('Git SHA: {}'.format(sha))
         if sha:
-            commit = self.repo.commit(sha)
-
-            return _to_map(commit)
-
+            try:
+                commit = self.repo.commit(sha)
+                return _to_map(commit)
+            except BadName:
+                log.debug('Commit {} was not found in {}.'.format(sha, self.repo.name))
+                return None
+            
 
     def latest(self):
         commit = list(self.repo.iter_commits())[0]

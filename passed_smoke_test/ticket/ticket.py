@@ -35,6 +35,7 @@ class Ticket:
         self.github_token = github_token
         
         jira_client = JIRA(options, basic_auth=(username, password))
+        self.jira_client = jira_client
         self.session = jira_client._session.get
 
         self.issue = jira_client.issue(issue_id)
@@ -60,3 +61,7 @@ class Ticket:
     def is_merged(self):
         return all(pr.is_merged for pr in self.pull_requests)
 
+
+    def comment(self, message):
+        comment = self.jira_client.add_comment(self.issue, 'new comment')
+        comment.update(body = message)

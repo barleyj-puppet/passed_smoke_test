@@ -1,3 +1,5 @@
+import ssl
+
 from github import Github
 
 from passed_smoke_test.log import Logger, logger_group
@@ -6,11 +8,21 @@ log = Logger(__name__)
 logger_group.add_logger(log)
 
 
+class TimeOut(Exception):
+    pass
+
 class PullRequest:
     def __init__(self, repo, id, username, token):
         "Initilizes PR from Github"
         g = Github(username, token)
-        org = g.get_organization('puppetlabs')
+        try:
+            org = g.get_organization('puppetlabs')
+        except ssl.SSLError as e:
+            if e.message == 'The read operation timed out':
+                raise TimeOut('Retrieving pull requests timed out')
+            else:
+                raise
+                
         self._pr = org.get_repo(repo).get_pull(id)
         self.number = id
         self.repo = self._pr.base.repo

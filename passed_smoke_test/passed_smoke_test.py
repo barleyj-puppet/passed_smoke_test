@@ -61,9 +61,11 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
 
         data = {}
         for pr in issue.pull_requests:
+            click.echo('Checking PR: {}'.format(pr.number))
             log.debug('Repo: {}, Pull Request: {}'.format(pr.repo.name, int(pr.number)))
             repo_shas = [vanagon.get_repo_commit_sha(vanagon_ref, pr.repo.name) for vanagon_ref in vanagon_shas]
             for commit in pr.commits:
+                click.echo('Checking that commit {} passed smoke test in pe-modules-vanagon'.format(commit))
                 log.debug('PR Commit: {}'.format(commit))
                 if commit and commit in repo_shas:
                     i = repo_shas.index(commit)
@@ -71,17 +73,26 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
                     log.debug('Repository {} has commit {}'.format(pr.repo.name, commit))
                     log.debug('Ticket {} passed smoke test in build {}'.format(ticket, build_numbers[i]))
                     data[build_numbers[i]] = {'smoke': pr.repo.name}
+                    click.echo('Checking that commit {} was promoted'.format(commit))
                     if build_numbers[i] in promotion_build_numbers:
                         log.debug('Ticket {} was promoted in build {}'.format(ticket, build_numbers[i]))
                         data[build_numbers[i]]['promoted'] = pr.repo.name
 
         if data:
+            messages = []
             build = sorted(data.keys(), reverse=True)[0]
-            click.echo('Ticket {} passed smoke test in build {}'.format(ticket, build))
+            build_message = 'Ticket {} passed smoke test in build {}'.format(ticket, build)
+            click.echo(build_message)
+            messages.append(build_message)
             if 'promoted' in data[build]:
-                click.echo('Ticket {} was promoted in build {}'.format(ticket, build))
+                promoted_message = 'Ticket {} was promoted in build {}'.format(ticket, build)
+                click.echo(promoted_message)
+                messages.append(promoted_message)
+            if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
+                issue.comment('\n'.join(messages))
+                click.echo('Comment added')
         else:
-            click.echo('Unable to find this {} in a build.'.format(ticket))
+            click.echo('Unable to find this {} in a build of enterprise-dist that passed smoke test or was promoted.'.format(ticket))
     else:
         click.echo("Not all PR's for this ticket have been merged")
 
