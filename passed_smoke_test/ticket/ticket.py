@@ -49,7 +49,9 @@ class Ticket:
         response = self.session(req_url)
         raw_data = json.loads(response.content)
         log.debug('PR Data: {}'.format(pprint.pformat(raw_data)))
-        jira_pull_requests = [pr for pr in raw_data['detail'][0]['pullRequests'] if pr['destination']['branch'] == releases[destination(pr['destination']['url'])][branch]]
+        jira_pull_requests = [pr for pr in raw_data['detail'][0]['pullRequests']
+                              if pr['destination']['branch'] == releases[destination(pr['destination']['url'])][branch]
+                              and pr['status'] != 'DECLINED']
         log.debug('JIRA Pull Requests: {}'.format(pprint.pformat(jira_pull_requests)))
         # Trim leading # from id
         pull_requests = [PullRequest(destination(pr['destination']['url']), id(pr['id']), self.github_username, self.github_token)

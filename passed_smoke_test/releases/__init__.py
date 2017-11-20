@@ -20,7 +20,7 @@ exceptions = {
         'irving': 'irving',
     },
     'puppetlabs-pe_manager': {
-        'davis': 'davis',
+        'davis': '2016.4.x',
         'glisan': 'glisan',
         'hoyt': 'hoyt',
         'irving': 'irving',

@@ -26,7 +26,13 @@ class PullRequest:
         self._pr = org.get_repo(repo).get_pull(id)
         self.number = id
         self.repo = self._pr.base.repo
-        
+
+    def __str__(self):
+        return "#{}: {})".format(self.number, self._pr.title)
+
+    def __repr__(self):
+        return "PullRequest(repo={}, id={}, title={})".format(self.repo, self.number, self._pr.title)
+
     @property
     def is_merged(self):
         pr = self._pr

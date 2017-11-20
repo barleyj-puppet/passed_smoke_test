@@ -61,7 +61,7 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
 
         data = {}
         for pr in issue.pull_requests:
-            click.echo('Checking PR: {}'.format(pr.number))
+            click.echo('Checking PR: {}'.format(pr))
             log.debug('Repo: {}, Pull Request: {}'.format(pr.repo.name, int(pr.number)))
             repo_shas = [vanagon.get_repo_commit_sha(vanagon_ref, pr.repo.name) for vanagon_ref in vanagon_shas]
             for commit in pr.commits:
