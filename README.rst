@@ -37,10 +37,10 @@ Insallation
 
 * Install passed_smoke_test. From within the passed_smoke_test directory run.::
 
-      python setup.py install
+      sudo pip install .
 
       # If you are doing development, this will symlink the source directory
-      python setup.py develop
+      sudo pip install --editable .
 
 
 Features
