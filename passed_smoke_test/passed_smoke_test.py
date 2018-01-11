@@ -62,6 +62,7 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
         data = {}
         for pr in issue.pull_requests:
             click.echo('Checking PR: {}'.format(pr))
+            data[pr.number] = {}
             log.debug('Repo: {}, Pull Request: {}'.format(pr.repo.name, int(pr.number)))
             repo_shas = [vanagon.get_repo_commit_sha(vanagon_ref, pr.repo.name) for vanagon_ref in vanagon_shas]
             for commit in pr.commits:
@@ -72,27 +73,32 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
                     log.debug('Build Number: {}'.format(build_numbers[i]))
                     log.debug('Repository {} has commit {}'.format(pr.repo.name, commit))
                     log.debug('Ticket {} passed smoke test in build {}'.format(ticket, build_numbers[i]))
-                    data[build_numbers[i]] = {'smoke': pr.repo.name}
+                    data[pr.number] = {'smoke': build_numbers[i]}
                     click.echo('Checking that commit {} was promoted'.format(commit))
                     if build_numbers[i] in promotion_build_numbers:
                         log.debug('Ticket {} was promoted in build {}'.format(ticket, build_numbers[i]))
-                        data[build_numbers[i]]['promoted'] = pr.repo.name
+                        data[pr.number]['promoted'] = build_numbers[i]
 
         if data:
-            messages = []
-            build = sorted(data.keys(), reverse=True)[0]
-            build_message = 'Ticket {} passed smoke test in build {}'.format(ticket, build)
-            click.echo(build_message)
-            messages.append(build_message)
-            if 'promoted' in data[build]:
-                promoted_message = 'Ticket {} was promoted in build {}'.format(ticket, build)
-                click.echo(promoted_message)
-                messages.append(promoted_message)
-            if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
-                issue.comment('\n'.join(messages))
-                click.echo('Comment added')
+            passed_smoke = all(['smoke' in data[pr] for pr in data.keys()])
+            if passed_smoke:
+                messages = []
+                last_pr = max(data.keys(), lambda pr: data[pr]['smoke'])[0]
+                build = data[last_pr]
+                build_message = 'Ticket {} passed smoke test in build {}'.format(ticket, build['smoke'])
+                click.echo(build_message)
+                messages.append(build_message)
+                if 'promoted' in build:
+                    promoted_message = 'Ticket {} was promoted in build {}'.format(ticket, build['promoted'])
+                    click.echo(promoted_message)
+                    messages.append(promoted_message)
+                if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
+                    issue.comment('\n'.join(messages))
+                    click.echo('Comment added')
+            else:
+                click.echo('Unable to find this {} in a build of enterprise-dist that passed smoke test or was promoted.'.format(ticket))
         else:
-            click.echo('Unable to find this {} in a build of enterprise-dist that passed smoke test or was promoted.'.format(ticket))
+            click.echo("No PR's found for this ticket")
     else:
         click.echo("Not all PR's for this ticket have been merged")
 

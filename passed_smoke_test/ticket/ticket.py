@@ -26,7 +26,7 @@ def id(id):
     return int(id[1:])
 
 
-class Ticket:
+class Ticket(object):
     def __init__(self, issue_id, branch, username, password, github_username, github_token):
         options = {
             'server': 'https://tickets.puppetlabs.com'}

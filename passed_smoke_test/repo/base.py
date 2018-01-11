@@ -27,7 +27,6 @@ class Repo:
 
         # This is because we've changed some modules to use a name instead of a version
         branch = releases[project][named_branch]
-
         repo = git.Repo.init('/tmp/{}'.format(project))
 
         for remote in repo.remotes:
@@ -39,17 +38,21 @@ class Repo:
         remote = repo.remotes[remote_name]
 
         if named_branch:
-            remote.fetch(branch)
+            remote.fetch()
 
             log.debug('Active branch: {}'.format(repo.active_branch.name))
             if repo.active_branch.name != branch:
-                if branch in repo.heads:
-                    repo.delete_head(branch)
+#                branch = repo.heads[branch]
+#                branch.checkout()
+                # if branch in repo.heads:
+                #     repo.delete_head(branch)
 
-                repo.create_head(branch, remote.refs[branch]).set_tracking_branch(remote.refs[branch]).checkout()
+                head = repo.create_head(branch, remote.refs[branch])
+                head.set_tracking_branch(remote.refs[branch])
+                head.checkout()
 
             log.debug('Pulling branch {} in repo {}.'.format(branch, project))
-            remote.pull(branch, rebase=True)
+            remote.pull(branch)
         
         self.repo = repo
 
