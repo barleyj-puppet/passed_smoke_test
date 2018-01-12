@@ -41,13 +41,11 @@ class Repo:
             remote.fetch()
 
             log.debug('Active branch: {}'.format(repo.active_branch.name))
+            if branch not in repo.heads:
+                repo.create_head(branch, remote.refs[branch])
+                
             if repo.active_branch.name != branch:
-#                branch = repo.heads[branch]
-#                branch.checkout()
-                # if branch in repo.heads:
-                #     repo.delete_head(branch)
-
-                head = repo.create_head(branch, remote.refs[branch])
+                head = repo.heads[branch]
                 head.set_tracking_branch(remote.refs[branch])
                 head.checkout()
 
