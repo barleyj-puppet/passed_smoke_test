@@ -25,11 +25,3 @@ class PeModulesVanagon(Repo):
                 repo_git_ref = message.strip().split(' ')[6]
 
                 return repo_git_ref
-
-
-    def commits(self, repo):
-        commits = {c.message.strip().split(' ')[6] for c in self.repo.iter_commits() if 'GIT REF' in c.message and repo in c.message}
-
-        return commits
-
-        

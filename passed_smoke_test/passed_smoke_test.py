@@ -2,9 +2,11 @@
 import json
 import os
 import pprint
+import re
 import sys
 
 import click
+import pandas
 
 from automation import Jenkins
 from log import Logger, logger_group, DEBUG
@@ -21,6 +23,24 @@ def parse_build_description(description):
     parts = description.split('-')
 
     return parts[3][1:] if len(parts) == 4 else None
+
+
+def extract_repo_commit(message):
+    m = re.match('Update for (.*) \((.*)\), GIT REF (.*)\n.*', message)
+    items = []
+    if m:
+        items = list(m.groups())
+
+    return pandas.Series(items)
+
+
+def join(enterprise_dist, vanagon_commits, build_numbers, promotion_build_numbers, pull_requests):
+    enterprise_dist = pandas.merge(enterprise_dist, vanagon_commits, how='outer', left_on='git_ref', right_on='sha', suffixes=('_ed', '_v'))
+    enterprise_dist = pandas.merge(enterprise_dist, build_numbers, how='outer', left_on='short_sha', right_on='commit', suffixes=('_ed', '_bn'))
+    enterprise_dist = pandas.merge(enterprise_dist, promotion_build_numbers, how='outer', left_on='commit', right_on='commit', suffixes=('_bn', '_pbn'))
+    enterprise_dist = pandas.merge(enterprise_dist, pull_requests, how='outer', left_on='git_ref_v', right_on='commit', suffixes=('_v', '_pr'))
+
+    return enterprise_dist
 
 
 @click.group()
@@ -45,60 +65,51 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
     default_branch = releases['default'][branch]
     issue = Ticket(ticket, branch, jira_username, jira_token, github_username, github_token)
     log.debug('Ticket ID: {}'.format(issue.id))
+    server = Jenkins(jenkins_username, jenkins_token)
+    enterprise_dist = EnterpriseDist(branch)
+    vanagon = PeModulesVanagon(branch)
 
-    if issue.is_merged:
-        server = Jenkins(jenkins_username, jenkins_token)
+    # Parse PR's into format DataFrame can be created from
+    # First PR commit is the merge commit
+    pr_commits = [{'pr': str(pr), 'pr_number': pr.number, 'repo': pr.repo.name, 'commit': pr.commits[0]} for pr in issue.pull_requests]
+    pull_requests = pandas.DataFrame(pr_commits)
 
-        build_numbers = server.smoke_tests(default_branch)
+    # Build numbers that have passed smoke tests and the Enterprise Dist commit
+    build_numbers = pandas.DataFrame(server.smoke_tests(default_branch), columns=['build_number'])
+    build_numbers['commit'] = build_numbers['build_number'].apply(parse_build_description)
 
-        promotion_build_numbers = server.promotions(default_branch)
+    # Build numbers that were promoted and the Enterprise Dist commit
+    promotion_build_numbers = pandas.DataFrame(server.promotions(default_branch), columns=['build_number'])
+    promotion_build_numbers['commit'] = promotion_build_numbers['build_number'].apply(parse_build_description)
 
-        shas = filter(lambda x: x, map(parse_build_description, build_numbers))
-        enterprise_dist = EnterpriseDist(branch)
-        vanagon = PeModulesVanagon(branch)
+    # Enterprise Dist commits
+    # short_sha corresponds to build number commits. Doing this instead of
+    # doing a merge based on starts with.
+    enterprise_dist = pandas.DataFrame(enterprise_dist.commits())
+    enterprise_dist['date'] = pandas.to_datetime(enterprise_dist['date'])
+    enterprise_dist[['repo', 'rc', 'git_ref']] = enterprise_dist['message'].apply(extract_repo_commit)
+    enterprise_dist['short_sha'] = enterprise_dist['sha'].apply(lambda s: s[0:7])
 
-        vanagon_shas = [enterprise_dist.get_vanagon_commit_sha(sha) for sha in shas]
+    # Vanagon commits
+    vanagon_commits = pandas.DataFrame(vanagon.commits())
+    vanagon_commits[['repo', 'rc', 'git_ref']] = vanagon_commits['message'].apply(extract_repo_commit)
 
-        data = {}
-        for pr in issue.pull_requests:
-            click.echo('Checking PR: {}'.format(pr))
-            data[pr.number] = {}
-            log.debug('Repo: {}, Pull Request: {}'.format(pr.repo.name, int(pr.number)))
-            repo_shas = [vanagon.get_repo_commit_sha(vanagon_ref, pr.repo.name) for vanagon_ref in vanagon_shas]
-            for commit in pr.commits:
-                click.echo('Checking that commit {} passed smoke test in pe-modules-vanagon'.format(commit))
-                log.debug('PR Commit: {}'.format(commit))
-                if commit and commit in repo_shas:
-                    i = repo_shas.index(commit)
-                    log.debug('Build Number: {}'.format(build_numbers[i]))
-                    log.debug('Repository {} has commit {}'.format(pr.repo.name, commit))
-                    log.debug('Ticket {} passed smoke test in build {}'.format(ticket, build_numbers[i]))
-                    data[pr.number] = {'smoke': build_numbers[i]}
-                    click.echo('Checking that commit {} was promoted'.format(commit))
-                    if build_numbers[i] in promotion_build_numbers:
-                        log.debug('Ticket {} was promoted in build {}'.format(ticket, build_numbers[i]))
-                        data[pr.number]['promoted'] = build_numbers[i]
+    # Join all data together
+    enterprise_dist = join(enterprise_dist, vanagon_commits, build_numbers, promotion_build_numbers, pull_requests)
 
-        if data:
-            passed_smoke = all(['smoke' in data[pr] for pr in data.keys()])
-            if passed_smoke:
-                messages = []
-                last_pr = max(data.keys(), lambda pr: data[pr]['smoke'])[0]
-                build = data[last_pr]
-                build_message = 'Ticket {} passed smoke test in build {}'.format(ticket, build['smoke'])
-                click.echo(build_message)
-                messages.append(build_message)
-                if 'promoted' in build:
-                    promoted_message = 'Ticket {} was promoted in build {}'.format(ticket, build['promoted'])
-                    click.echo(promoted_message)
-                    messages.append(promoted_message)
-                if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
-                    issue.comment('\n'.join(messages))
-                    click.echo('Comment added')
-            else:
-                click.echo('Unable to find this {} in a build of enterprise-dist that passed smoke test or was promoted.'.format(ticket))
-        else:
-            click.echo("No PR's found for this ticket")
+    # Filter for commits that have a matching PR
+    pr_rows = enterprise_dist[enterprise_dist['commit_pr'].notnull()]
+
+    if pr_rows['build_number_pbn'].notnull().all():
+        passed_smoke_bn = pr_rows['build_number_bn'].item()
+        click.echo('Ticket {} passed smoke test in build {}'.format(ticket, passed_smoke_bn))
+
+        promoted_bn = pr_rows['build_number_pbn'].item()
+        click.echo('Ticket {} was promoted in build {}'.format(ticket, promoted_bn))
+
+        if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
+            issue.comment('\n'.join(messages))
+            click.echo('Comment added')
     else:
         click.echo("Not all PR's for this ticket have been merged")
 

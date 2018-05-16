@@ -1,6 +1,8 @@
 import git
 from gitdb.exc import BadName
 
+import pandas
+
 from passed_smoke_test.log import Logger, logger_group
 from passed_smoke_test.releases import releases
 
@@ -14,7 +16,7 @@ remote_name = 'puppet'
 def _to_map(commit):
     return {
         'sha': commit.hexsha,
-        'date': commit.authored_date,
+        'date': pandas.to_datetime(commit.authored_date, unit='s'),
         'message': commit.message,
     }
 
