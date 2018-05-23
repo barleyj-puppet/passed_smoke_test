@@ -7,6 +7,7 @@ def defaults():
         'glisan': '2017.2.x',
         'hoyt': '2017.3.x',
         'irving': '2018.1.x',
+        'johnson': '2018.2.x',
     }
 
 
@@ -18,24 +19,28 @@ exceptions = {
         'glisan': 'glisan',
         'hoyt': 'hoyt',
         'irving': 'irving',
+        'johnson': 'johnson',
     },
     'puppetlabs-pe_manager': {
         'davis': '2016.4.x',
         'glisan': 'glisan',
         'hoyt': 'hoyt',
         'irving': 'irving',
+        'johnson': 'johnson',        
     },
     'puppetlabs-puppet_enterprise': {
         'davis': '2016.4.x',
         'glisan': 'glisan',
         'hoyt': 'hoyt',
         'irving': 'irving',
+        'johnson': 'johnson',        
     },
     'puppetlabs-pe_infrastructure': {
         'davis': '2016.4.x',
         'glisan': 'glisan',
         'hoyt': 'hoyt',
         'irving': 'irving',
+        'johnson': 'johnson',        
     }
 
 }
