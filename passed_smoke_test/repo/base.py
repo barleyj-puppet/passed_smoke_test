@@ -28,6 +28,7 @@ class Repo:
         """Initializes, clones and checks out a branch if specified"""
 
         # This is because we've changed some modules to use a name instead of a version
+        self.name = project
         branch = releases[project][named_branch]
         repo = git.Repo.init('/tmp/{}'.format(project))
 
@@ -52,7 +53,7 @@ class Repo:
                 head.checkout()
 
             log.debug('Pulling branch {} in repo {}.'.format(branch, project))
-            remote.pull(branch)
+            remote.pull('--rebase')
         
         self.repo = repo
 
@@ -70,7 +71,7 @@ class Repo:
                 commit = self.repo.commit(sha)
                 return _to_map(commit)
             except BadName:
-                log.debug('Commit {} was not found in {}.'.format(sha, self.repo.name))
+                log.debug('Commit {} was not found in {}.'.format(sha, self.name))
                 return None
             
 

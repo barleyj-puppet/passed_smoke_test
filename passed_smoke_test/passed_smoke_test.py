@@ -167,12 +167,12 @@ def commits(repo, branch):
     "Outputs all commits in repo that are in pe-modules-vanagon"
 
     vanagon = PeModulesVanagon(branch)
-    commits = vanagon.commits(repo)
+    commits = vanagon.commits()
 
     project = Repo(repo, branch)
     project_commits = project.commits()
 
-    in_build = [c for c in project_commits if c['sha'] in commits]
+    in_build = [c for c in project_commits if vanagon.get_repo_commit_sha(repo, c['sha'])]
 
     for s in in_build:
         commit = 'commit: {}'.format(s['sha'])

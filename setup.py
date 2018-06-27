@@ -18,7 +18,7 @@ requirements = [
     'Logbook==1.1.0',
     'jira==1.0.10',
     'PyGithub==1.35',
-
+    'pandas==0.22.0',
 ]
 
 setup_requirements = [
