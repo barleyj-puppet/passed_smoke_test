@@ -41,8 +41,14 @@ exceptions = {
         'hoyt': 'hoyt',
         'irving': 'irving',
         'johnson': 'johnson',        
-    }
-
+    },
+    'puppetlabs-pe_install': {
+        'davis': '2016.4.x',
+        'glisan': 'glisan',
+        'hoyt': 'hoyt',
+        'irving': 'irving',
+        'johnson': 'johnson',
+    },
 }
 
 releases.update(exceptions)

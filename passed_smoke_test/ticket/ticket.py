@@ -2,6 +2,7 @@ import json
 import pprint
 
 from jira import JIRA
+from jira import Project
 
 from .pull_request import PullRequest
 from passed_smoke_test.log import Logger, logger_group
@@ -13,7 +14,7 @@ logger_group.add_logger(log)
 
 PULL_REQUEST = 'https://tickets.puppetlabs.com/rest/dev-status/latest/issue/detail?issueId={}&applicationType=github&dataType=pullrequest'
 REPOSITORY   = 'https://tickets.puppetlabs.com/rest/dev-status/latest/issue/detail?issueId={}&applicationType=github&dataType=repository'
-    
+
 MERGING     = '10002'
 INTEGRATING = '10003'
 
@@ -40,7 +41,24 @@ class Ticket(object):
 
         self.issue = jira_client.issue(issue_id)
         self.id = self.issue.id
+
         self.branch = branch
+
+    @property
+    def fix_build(self):
+        return self.issue.fields.customfield_11000
+
+    @fix_build.setter
+    def fix_build(self, value):
+        self.issue.update(fields={'customfield_11000': value})
+
+    @property
+    def fix_versions(self):
+        return [v.name for v in self.issue.fields.fixVersions]
+
+    @fix_versions.setter
+    def fix_versions(self, value):
+        self.issue.add_field_value('fixVersions', value)
 
     @property
     def pull_requests(self):

@@ -12,7 +12,7 @@ from automation import Jenkins
 from log import Logger, logger_group, DEBUG
 from repo import Repo, EnterpriseDist, PeModulesVanagon
 from releases import releases
-from ticket import PullRequest, Ticket
+from ticket import PullRequest, Ticket, Project
 
 
 log = Logger(__name__)
@@ -59,11 +59,13 @@ def cli(debug):
 @click.option("--jenkins-token", prompt=True, hide_input=True, envvar='JENKINS_TOKEN', required=True, help='Can be provided by setting the JENKINS_TOKEN environment variable. Will prompt if this option is not provided.')
 @click.option("--github-username", envvar='GITHUB_USERNAME', required=True, help='Can be provided by setting the GITHUB_USERNAME environment variable.')
 @click.option("--github-token", prompt=True, hide_input=True, envvar='GITHUB_TOKEN', required=True, help='Can be provided by setting the GITHUB_TOKEN environment variable. Will prompt if this option is not provided.')
-def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_token, github_username, github_token):
+@click.option("--force", is_flag=True)
+def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_token, github_username, github_token, force):
     "Tells you if a ticket has passed smoke test and has been promoted into a build"
 
     default_branch = releases['default'][branch]
     issue = Ticket(ticket, branch, jira_username, jira_token, github_username, github_token)
+    project = Project(jira_username, jira_token)
     log.debug('Ticket ID: {}'.format(issue.id))
     server = Jenkins(jenkins_username, jenkins_token)
     enterprise_dist = EnterpriseDist(branch)
@@ -71,8 +73,11 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
 
     # Parse PR's into format DataFrame can be created from
     # First PR commit is the merge commit
-    pr_commits = [{'pr': str(pr), 'pr_number': pr.number, 'repo': pr.repo.name, 'commit': pr.commits[0]} for pr in issue.pull_requests]
-    pull_requests = pandas.DataFrame(pr_commits)
+    pr_commits = [{'pr': str(pr), 'pr_number': pr.number, 'repo': pr.repo.name, 'commit': pr.commits[0], 'is_merged': pr.is_merged} for pr in issue.pull_requests]
+    pull_requests = pandas.DataFrame(pr_commits, columns=['pr', 'pr_number', 'repo', 'commit', 'is_merged'])
+    if not pull_requests['is_merged'].all():
+        click.echo("Not all PR's for this ticket have been merged")
+        exit(1)
 
     # Build numbers that have passed smoke tests and the Enterprise Dist commit
     build_numbers = pandas.DataFrame(server.smoke_tests(default_branch), columns=['build_number'])
@@ -100,18 +105,31 @@ def ticket(branch, ticket, jira_username, jira_token, jenkins_username, jenkins_
     # Filter for commits that have a matching PR
     pr_rows = enterprise_dist[enterprise_dist['commit_pr'].notnull()]
 
-    if pr_rows['build_number_pbn'].notnull().all():
-        passed_smoke_bn = pr_rows['build_number_bn'].item()
-        click.echo('Ticket {} passed smoke test in build {}'.format(ticket, passed_smoke_bn))
+    if not pr_rows.empty and (force or pr_rows['build_number_pbn'].notnull().all()):
+        passed_smoke_bn = pr_rows['build_number_bn'].iloc[0]
+        passed_smoke_message = 'Ticket {} passed smoke test in build {}'.format(ticket, passed_smoke_bn)
+        click.echo(passed_smoke_message)
 
-        promoted_bn = pr_rows['build_number_pbn'].item()
-        click.echo('Ticket {} was promoted in build {}'.format(ticket, promoted_bn))
+        promoted_bn = pr_rows['build_number_pbn'].iloc[0]
+        promoted_message = 'Ticket {} was promoted in build {}'.format(ticket, promoted_bn)
+        click.echo(promoted_message)
 
-        if click.confirm('Do you wish to add this comment to ticket {}'.format(ticket)):
-            issue.comment('\n'.join(messages))
-            click.echo('Comment added')
     else:
-        click.echo("Not all PR's for this ticket have been merged")
+        click.echo("Unable to find builds for all PR's in this ticket")
+        exit(1)
+
+    if click.confirm('Do you wish to update ticket {}?'.format(ticket)):
+        if not issue.fix_build:
+            issue.fix_build = promoted_bn
+
+        versions = project.fix_versions
+        version_choices = ['{}. {}'.format(x+1, v['name']) for x, v in enumerate(versions)]
+        click.echo('\n'.join(version_choices))
+        fix_version = click.prompt('Please choose which version this change is targetting', type=int)
+        click.echo('You chose: {}'.format(versions[fix_version-1]))
+        issue.fix_versions = versions[fix_version-1]
+        issue.comment('\n'.join([passed_smoke_message, promoted_message]))
+        click.echo('Comment added')
 
 
 @cli.command()
