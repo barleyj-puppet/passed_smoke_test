@@ -35,7 +35,7 @@ ptyprocess==0.5.2
 py==1.4.34
 PyGithub==1.35
 Pygments==2.2.0
-PyJWT==1.5.3
+PyJWT==2.4.0
 python-jenkins==0.4.15
 pytz==2017.2
 PyYAML==3.12
